@@ -55,13 +55,11 @@ type RegisterResponse struct {
 type Agent struct {
 	ID         int    `json:"id"`
 	DBVendor   string `json:"vendor"`
-	DBPort     string `json:"dbport"`
 	DBAddr     string `json:"dbaddress"`
 	DBSID      string `json:"sid"`
 	ShortName  string `json:"agent"`
 	LongName   string `json:"agent_long"`
 	Identifier string `json:"agent_identifier"`
-	AgentPort  string `json:"agent_port"`
 	Version    string `json:"agent_version"`
 	Address    string `json:"agent_address"`
 	Token      string `json:"agent_token"`
@@ -136,7 +134,7 @@ func (a Agent) DropDatabase(id int, dbname, dbuser string) (string, error) {
 }
 
 func (a Agent) executeAction(dbreq DBRequest, endpoint string) (string, error) {
-	dest := fmt.Sprintf("%s:%s/%s", a.Address, a.AgentPort, endpoint)
+	dest := fmt.Sprintf("%s/%s", a.Address, endpoint)
 
 	if !strings.HasPrefix(dest, "http://") && !strings.HasPrefix(dest, "https://") {
 		dest = fmt.Sprintf("http://%s", dest)

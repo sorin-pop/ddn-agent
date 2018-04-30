@@ -30,7 +30,7 @@
     "srv",
     "status"
   ]
-  revision = "a3446809ac07fc31da4d41d9947f0d6c2e5d1bfb"
+  revision = "c15520b81c197b8a8eacebc82b71cbd47a2f4ace"
 
 [[projects]]
   branch = "master"
