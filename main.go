@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/djavorszky/ddn/common/inet"
-	"github.com/djavorszky/ddn/common/logger"
-	"github.com/djavorszky/ddn/common/model"
+	"github.com/djavorszky/ddn-common/inet"
+	"github.com/djavorszky/ddn-common/logger"
+	"github.com/djavorszky/ddn-common/model"
 )
 
 const version = "3"

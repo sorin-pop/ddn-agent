@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 
-	"github.com/djavorszky/ddn/common/srv"
+	"github.com/djavorszky/ddn-common/srv"
 	"github.com/gorilla/mux"
 )
 

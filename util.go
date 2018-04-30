@@ -9,9 +9,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/djavorszky/ddn/common/inet"
-	"github.com/djavorszky/ddn/common/logger"
-	"github.com/djavorszky/ddn/common/model"
+	"github.com/djavorszky/ddn-common/inet"
+	"github.com/djavorszky/ddn-common/logger"
+	"github.com/djavorszky/ddn-common/model"
 	"github.com/djavorszky/notif"
 )
 

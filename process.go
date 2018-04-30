@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/djavorszky/ddn/common/inet"
-	"github.com/djavorszky/ddn/common/logger"
-	"github.com/djavorszky/ddn/common/model"
-	"github.com/djavorszky/ddn/common/status"
-	"github.com/djavorszky/ddn/server/brwsr"
+	"github.com/djavorszky/ddn-common/brwsr"
+	"github.com/djavorszky/ddn-common/inet"
+	"github.com/djavorszky/ddn-common/logger"
+	"github.com/djavorszky/ddn-common/model"
+	"github.com/djavorszky/ddn-common/status"
 	"github.com/djavorszky/notif"
 )
 

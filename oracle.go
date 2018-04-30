@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/djavorszky/ddn/common/logger"
-	"github.com/djavorszky/ddn/common/model"
+	"github.com/djavorszky/ddn-common/logger"
+	"github.com/djavorszky/ddn-common/model"
 )
 
 type oracle struct {
