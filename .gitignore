@@ -30,17 +30,4 @@ _testmain.go
 
 .vscode
 
-client_secret*
-
-dist/data
-
-!srv.conf
-!default.conf
-
-agent/exports
-agent/agent*
-server/server*
-server/web/dumps/*
-node_modules
-
-out
+ddn-agent
