@@ -1,0 +1,9 @@
+-- Create the SQL Server LOGIN and associated USER for CloudDB (so that we don't connect with sa, and also so that the portal-ext connection properties don't contain sa and its password.)
+
+-- sqlcmd -U sa -P Password1
+CREATE LOGIN clouddb WITH PASSWORD = 'password';
+GO
+GRANT ALL PRIVILEGES TO clouddb;
+GO
+ALTER SERVER ROLE [dbcreator] ADD MEMBER [clouddb]
+GO

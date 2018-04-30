@@ -1,0 +1,12 @@
+language: go
+go: 
+  - "1.8.1"
+
+go_import_path: github.com/djavorszky/ddn
+
+services: 
+  - mysql
+
+before_install: 
+  - "mysql -e 'CREATE DATABASE IF NOT EXISTS unit_test; GRANT ALL PRIVILEGES ON unit_test.* TO travis;'"
+
