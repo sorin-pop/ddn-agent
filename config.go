@@ -17,11 +17,8 @@ type Config struct {
 	SID           string `toml:"oracle-sid"`
 	DatafileDir   string `toml:"oracle-datafiles-path"`
 	LocalDBAddr   string `toml:"db-local-addr"`
-	LocalDBPort   string `toml:"db-local-port"`
 	AgentDBHost   string `toml:"db-remote-addr"`
-	AgentDBPort   string `toml:"db-remote-port"`
 	AgentAddr     string `toml:"agent-addr"`
-	AgentPort     string `toml:"agent-port"`
 	ShortName     string `toml:"agent-shortname"`
 	AgentName     string `toml:"agent-longname"`
 	MasterAddress string `toml:"server-address"`
@@ -42,13 +39,10 @@ func (c Config) Print() {
 	}
 
 	logger.Info("Local DB addr:\t%s", conf.LocalDBAddr)
-	logger.Info("Local DB port:\t%s", conf.LocalDBPort)
 
 	logger.Info("Remote DB addr:\t%s", conf.AgentDBHost)
-	logger.Info("Remote DB port:\t%s", conf.AgentDBPort)
 
 	logger.Info("Agent addr:\t%s", conf.AgentAddr)
-	logger.Info("Agent port:\t%s", conf.AgentPort)
 
 	logger.Info("Short name:\t\t%s", conf.ShortName)
 	logger.Info("Agent name:\t%s", conf.AgentName)
@@ -66,12 +60,9 @@ func NewConfig(vendor string) Config {
 			Vendor:        "mysql",
 			Version:       "5.5.53",
 			ShortName:     "mysql-55",
-			LocalDBPort:   "3306",
-			LocalDBAddr:   "localhost",
-			AgentPort:     "7000",
-			AgentAddr:     "http://localhost",
-			AgentDBPort:   "3306",
-			AgentDBHost:   "localhost",
+			LocalDBAddr:   "localhost:3306",
+			AgentAddr:     "http://localhost:7000",
+			AgentDBHost:   "localhost:3306",
 			User:          "root",
 			Password:      "root",
 			MasterAddress: "http://localhost:7010",
@@ -90,12 +81,9 @@ func NewConfig(vendor string) Config {
 			Vendor:        "postgres",
 			Version:       "9.4.9",
 			ShortName:     "postgre-94",
-			LocalDBPort:   "5432",
-			LocalDBAddr:   "localhost",
-			AgentPort:     "7000",
-			AgentAddr:     "http://localhost",
-			AgentDBPort:   "5432",
-			AgentDBHost:   "localhost",
+			LocalDBAddr:   "localhost:5432",
+			AgentAddr:     "http://localhost:7000",
+			AgentDBHost:   "localhost:5432",
 			User:          "postgres",
 			Password:      "password",
 			MasterAddress: "http://localhost:7010",
@@ -114,12 +102,9 @@ func NewConfig(vendor string) Config {
 			Vendor:        "oracle",
 			Version:       "11g",
 			ShortName:     "oracle-11g",
-			LocalDBPort:   "1521",
-			LocalDBAddr:   "localhost",
-			AgentPort:     "7000",
-			AgentAddr:     "http://localhost",
-			AgentDBPort:   "1521",
-			AgentDBHost:   "localhost",
+			LocalDBAddr:   "localhost:1521",
+			AgentAddr:     "http://localhost:7000",
+			AgentDBHost:   "localhost:1521",
 			User:          "system",
 			Password:      "password",
 			SID:           "orcl",

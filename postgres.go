@@ -25,11 +25,11 @@ type postgres struct {
 func (db *postgres) Connect(c Config) error {
 	var err error
 
-	if ok := sutils.Present(c.User, c.Password, c.LocalDBAddr, c.LocalDBPort); !ok {
-		return fmt.Errorf("missing parameters. Need-Got: {user: %s}, {password: %s}, {dbAddress: %s}, {dbPort: %s}", c.User, c.Password, c.LocalDBAddr, c.LocalDBPort)
+	if ok := sutils.Present(c.User, c.Password, c.LocalDBAddr); !ok {
+		return fmt.Errorf("missing parameters. Need-Got: {user: %s}, {password: %s}, {dbAddress: %s}", c.User, c.Password, c.LocalDBAddr)
 	}
 
-	datasource := fmt.Sprintf("postgres://%s:%s@%s:%s?sslmode=disable", c.User, c.Password, c.LocalDBAddr, c.LocalDBPort)
+	datasource := fmt.Sprintf("postgres://%s:%s@%s?sslmode=disable", c.User, c.Password, c.LocalDBAddr)
 	db.conn, err = sql.Open("postgres", datasource)
 	if err != nil {
 		return fmt.Errorf("creating connection pool failed: %s", err.Error())

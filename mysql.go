@@ -28,11 +28,11 @@ type mysql struct {
 func (db *mysql) Connect(c Config) error {
 	var err error
 
-	if ok := sutils.Present(c.User, c.LocalDBAddr, c.LocalDBPort); !ok {
-		return fmt.Errorf("missing parameters. Need-Got: {user: %s}, {dbAddress: %s}, {dbPort: %s}", c.User, c.LocalDBAddr, c.LocalDBPort)
+	if ok := sutils.Present(c.User, c.LocalDBAddr); !ok {
+		return fmt.Errorf("missing parameters. Need-Got: {user: %s}, {dbAddress: %s}", c.User, c.LocalDBAddr)
 	}
 
-	datasource := fmt.Sprintf("%s:%s@tcp(%s:%s)/", c.User, c.Password, c.LocalDBAddr, c.LocalDBPort)
+	datasource := fmt.Sprintf("%s:%s@tcp(%s)/", c.User, c.Password, c.LocalDBAddr)
 	db.conn, err = sql.Open("mysql", datasource)
 	if err != nil {
 		return fmt.Errorf("creating connection pool failed: %s", err.Error())
@@ -255,10 +255,12 @@ func (db *mysql) ImportDatabase(dbreq model.DBRequest) error {
 	}
 	defer file.Close()
 
+	port := strings.Split(conf.LocalDBAddr, ":")[1]
+
 	// Start the import
 	args := []string{
 		fmt.Sprintf("--host=%s", conf.LocalDBAddr),
-		fmt.Sprintf("--port=%s", conf.LocalDBPort),
+		fmt.Sprintf("--port=%s", port),
 		fmt.Sprintf("-u%s", dbreq.Username),
 		fmt.Sprintf("-p%s", dbreq.Password),
 		dbreq.DatabaseName,
@@ -291,9 +293,11 @@ func (db *mysql) ExportDatabase(dbreq model.DBRequest) (string, error) {
 	}
 	defer outputfile.Close()
 
+	port := strings.Split(conf.LocalDBAddr, ":")[1]
+
 	args := []string{
 		fmt.Sprintf("--host=%s", conf.LocalDBAddr),
-		fmt.Sprintf("--port=%s", conf.LocalDBPort),
+		fmt.Sprintf("--port=%s", port),
 		fmt.Sprintf("-u%s", dbreq.Username),
 		fmt.Sprintf("-p%s", dbreq.Password),
 		dbreq.DatabaseName,

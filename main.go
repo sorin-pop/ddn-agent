@@ -8,11 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"github.com/djavorszky/ddn-common/inet"
 	"github.com/djavorszky/ddn-common/logger"
 	"github.com/djavorszky/ddn-common/model"
 )
@@ -49,12 +49,15 @@ func main() {
 	logger.Level = logger.INFO
 
 	var err error
-	filename := flag.String("p", "ddnc.conf", "Specify the configuration file's name")
+	confLocation := flag.String("p", "env", "Specify whether to read a configuration from a file (e.g. server.conf) or from environment variables.")
 	logname := flag.String("l", "std", "Specify the log's filename. If set to std, logs to the terminal.")
 
 	flag.Parse()
 
-	loadProperties(*filename)
+	err = loadProperties(*confLocation)
+	if err != nil {
+		logger.Fatal("Failed loading configuration: %v", err)
+	}
 
 	if _, err := os.Stat(conf.Exec); os.IsNotExist(err) {
 		logger.Fatal("database executable doesn't exist: %v", conf.Exec)
@@ -95,7 +98,7 @@ func main() {
 
 	err = db.Connect(conf)
 	if err != nil {
-		logger.Fatal("couldn't establish database connection:", err.Error())
+		logger.Fatal("couldn't establish database connection: %v", err)
 	}
 	defer db.Close()
 	logger.Info("Database connection established")
@@ -161,9 +164,13 @@ func main() {
 	go keepAlive()
 	go checkExports()
 
-	logger.Info("Starting to listen on port %s", conf.AgentPort)
+	sl := strings.Split(conf.AgentAddr, ":")
 
-	port = fmt.Sprintf(":%s", conf.AgentPort)
+	port := sl[len(sl)-1]
+
+	logger.Info("Starting to listen on %s", conf.AgentAddr)
+
+	port = fmt.Sprintf(":%s", port)
 
 	startup = time.Now()
 
@@ -172,23 +179,118 @@ func main() {
 	logger.Fatal("server: %v", http.ListenAndServe(port, Router()))
 }
 
-func loadProperties(filename string) {
-	logger.Debug("Loading properties")
+func loadProperties(confLocation string) error {
+	if confLocation != "env" {
+		return loadPropertiesFromFile(confLocation)
+	}
 
+	return loadPropertiesFromEnv()
+}
+
+func loadPropertiesFromFile(filename string) error {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		logger.Warn("Couldn't find properties file, trying to download one.")
-
-		tmpConfig, err := inet.DownloadFile(".", "https://raw.githubusercontent.com/djavorszky/ddn/master/agent/default.conf")
-		if err != nil {
-			logger.Fatal("Could not fetch configuration file, please download it manually from https://github.com/djavorszky/ddn")
-		}
-
-		os.Rename(tmpConfig, filename)
-
-		logger.Info("Continuing with default configuration...")
+		return fmt.Errorf("file doesn't exist: %s", filename)
 	}
 
 	if _, err := toml.DecodeFile(filename, &conf); err != nil {
-		logger.Fatal("couldn't read configuration file: ", err.Error())
+		return fmt.Errorf("couldn't read configuration file: %v", err)
 	}
+
+	return nil
+}
+
+const (
+	envDBVendor          = "DB_VENDOR"
+	envDBExecutable      = "DB_EXECUTABLE"
+	envDBUser            = "DB_USER"
+	envDBPass            = "DB_PASSWORD"
+	envOracleSID         = "ORACLE_SID"
+	envOracleDatafileDir = "ORACLE_DATAFILES_PATH"
+	envDBLocalAddress    = "DB_LOCAL_ADDRESS"
+	envDBRemoteAddress   = "DB_REMOTE_ADDRESS"
+	envAgentAddress      = "AGENT_ADDRESS"
+	envAgentName         = "AGENT_NAME"
+	envServerAddress     = "SERVER_ADDRESS"
+)
+
+func loadPropertiesFromEnv() error {
+	dbVendor, err := loadRequiredProperty(envDBVendor)
+	if err != nil {
+		return err
+	}
+	conf.Vendor = dbVendor
+
+	executor, err := loadRequiredProperty(envDBExecutable)
+	if err != nil {
+		return err
+	}
+	conf.Exec = executor
+
+	dbUser, err := loadRequiredProperty(envDBUser)
+	if err != nil {
+		return err
+	}
+	conf.User = dbUser
+
+	conf.Password = loadOptionalProperty(envDBPass)
+
+	if conf.Vendor == "oracle" {
+		sid, err := loadRequiredProperty(envOracleSID)
+		if err != nil {
+			return err
+		}
+		conf.SID = sid
+
+		datafileDir, err := loadRequiredProperty(envOracleDatafileDir)
+		if err != nil {
+			return err
+		}
+		conf.DatafileDir = datafileDir
+	}
+
+	remoteAddr, err := loadRequiredProperty(envDBRemoteAddress)
+	if err != nil {
+		return err
+	}
+	conf.AgentDBHost = remoteAddr
+
+	localAddr := loadOptionalProperty(envDBLocalAddress)
+	if localAddr == "" {
+		localAddr = remoteAddr
+	}
+	conf.LocalDBAddr = localAddr
+
+	agentAddr, err := loadRequiredProperty(envAgentAddress)
+	if err != nil {
+		return err
+	}
+	conf.AgentAddr = agentAddr
+
+	agentName, err := loadRequiredProperty(envAgentName)
+	if err != nil {
+		return err
+	}
+	conf.AgentName = agentName
+	conf.ShortName = agentName
+
+	serverAddress, err := loadRequiredProperty(envServerAddress)
+	if err != nil {
+		return err
+	}
+	conf.MasterAddress = serverAddress
+
+	return nil
+}
+
+func loadRequiredProperty(key string) (string, error) {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return "", fmt.Errorf("required environment variable missing: %s", key)
+	}
+
+	return val, nil
+}
+
+func loadOptionalProperty(key string) string {
+	return os.Getenv(key)
 }
