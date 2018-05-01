@@ -87,7 +87,7 @@ func registerAgent() error {
 		LongName:  longname,
 		Version:   version,
 		DBVendor:  conf.Vendor,
-		DBAddr:    conf.AgentDBHost,
+		DBAddr:    conf.RemoteDBAddr,
 		DBSID:     conf.SID,
 		Addr:      conf.AgentAddr,
 	}

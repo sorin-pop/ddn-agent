@@ -15,6 +15,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/djavorszky/ddn-common/logger"
 	"github.com/djavorszky/ddn-common/model"
+	"github.com/kelseyhightower/envconfig"
 )
 
 const version = "3"
@@ -199,98 +200,11 @@ func loadPropertiesFromFile(filename string) error {
 	return nil
 }
 
-const (
-	envDBVendor          = "DB_VENDOR"
-	envDBExecutable      = "DB_EXECUTABLE"
-	envDBUser            = "DB_USER"
-	envDBPass            = "DB_PASSWORD"
-	envOracleSID         = "ORACLE_SID"
-	envOracleDatafileDir = "ORACLE_DATAFILES_PATH"
-	envDBLocalAddress    = "DB_LOCAL_ADDRESS"
-	envDBRemoteAddress   = "DB_REMOTE_ADDRESS"
-	envAgentAddress      = "AGENT_ADDRESS"
-	envAgentName         = "AGENT_NAME"
-	envServerAddress     = "SERVER_ADDRESS"
-)
-
 func loadPropertiesFromEnv() error {
-	dbVendor, err := loadRequiredProperty(envDBVendor)
+	err := envconfig.Process("ddn", &conf)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading from env: %v", err)
 	}
-	conf.Vendor = dbVendor
-
-	executor, err := loadRequiredProperty(envDBExecutable)
-	if err != nil {
-		return err
-	}
-	conf.Exec = executor
-
-	dbUser, err := loadRequiredProperty(envDBUser)
-	if err != nil {
-		return err
-	}
-	conf.User = dbUser
-
-	conf.Password = loadOptionalProperty(envDBPass)
-
-	if conf.Vendor == "oracle" {
-		sid, err := loadRequiredProperty(envOracleSID)
-		if err != nil {
-			return err
-		}
-		conf.SID = sid
-
-		datafileDir, err := loadRequiredProperty(envOracleDatafileDir)
-		if err != nil {
-			return err
-		}
-		conf.DatafileDir = datafileDir
-	}
-
-	remoteAddr, err := loadRequiredProperty(envDBRemoteAddress)
-	if err != nil {
-		return err
-	}
-	conf.AgentDBHost = remoteAddr
-
-	localAddr := loadOptionalProperty(envDBLocalAddress)
-	if localAddr == "" {
-		localAddr = remoteAddr
-	}
-	conf.LocalDBAddr = localAddr
-
-	agentAddr, err := loadRequiredProperty(envAgentAddress)
-	if err != nil {
-		return err
-	}
-	conf.AgentAddr = agentAddr
-
-	agentName, err := loadRequiredProperty(envAgentName)
-	if err != nil {
-		return err
-	}
-	conf.AgentName = agentName
-	conf.ShortName = agentName
-
-	serverAddress, err := loadRequiredProperty(envServerAddress)
-	if err != nil {
-		return err
-	}
-	conf.MasterAddress = serverAddress
 
 	return nil
-}
-
-func loadRequiredProperty(key string) (string, error) {
-	val, ok := os.LookupEnv(key)
-	if !ok {
-		return "", fmt.Errorf("required environment variable missing: %s", key)
-	}
-
-	return val, nil
-}
-
-func loadOptionalProperty(key string) string {
-	return os.Getenv(key)
 }

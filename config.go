@@ -9,19 +9,19 @@ import (
 
 // Config to hold the database server and agent information
 type Config struct {
-	Vendor        string `toml:"db-vendor"`
+	Vendor        string `toml:"db-vendor" required:"true"`
 	Version       string `toml:"db-version"`
-	Exec          string `toml:"db-executable"`
-	User          string `toml:"db-username"`
+	Exec          string `toml:"db-executable" required:"true"`
+	User          string `toml:"db-username" required:"true"`
 	Password      string `toml:"db-userpass"`
 	SID           string `toml:"oracle-sid"`
 	DatafileDir   string `toml:"oracle-datafiles-path"`
-	LocalDBAddr   string `toml:"db-local-addr"`
-	AgentDBHost   string `toml:"db-remote-addr"`
-	AgentAddr     string `toml:"agent-addr"`
-	ShortName     string `toml:"agent-shortname"`
+	LocalDBAddr   string `toml:"db-local-addr" required:"true"`
+	RemoteDBAddr  string `toml:"db-remote-addr" required:"true"`
+	AgentAddr     string `toml:"agent-addr" required:"true"`
+	ShortName     string `toml:"agent-shortname" required:"true"`
 	AgentName     string `toml:"agent-longname"`
-	MasterAddress string `toml:"server-address"`
+	MasterAddress string `toml:"server-address" required:"true"`
 }
 
 // Print prints the Config object to the log.
@@ -40,7 +40,7 @@ func (c Config) Print() {
 
 	logger.Info("Local DB addr:\t%s", conf.LocalDBAddr)
 
-	logger.Info("Remote DB addr:\t%s", conf.AgentDBHost)
+	logger.Info("Remote DB addr:\t%s", conf.RemoteDBAddr)
 
 	logger.Info("Agent addr:\t%s", conf.AgentAddr)
 
@@ -62,7 +62,7 @@ func NewConfig(vendor string) Config {
 			ShortName:     "mysql-55",
 			LocalDBAddr:   "localhost:3306",
 			AgentAddr:     "http://localhost:7000",
-			AgentDBHost:   "localhost:3306",
+			RemoteDBAddr:  "localhost:3306",
 			User:          "root",
 			Password:      "root",
 			MasterAddress: "http://localhost:7010",
@@ -83,7 +83,7 @@ func NewConfig(vendor string) Config {
 			ShortName:     "postgre-94",
 			LocalDBAddr:   "localhost:5432",
 			AgentAddr:     "http://localhost:7000",
-			AgentDBHost:   "localhost:5432",
+			RemoteDBAddr:  "localhost:5432",
 			User:          "postgres",
 			Password:      "password",
 			MasterAddress: "http://localhost:7010",
@@ -104,7 +104,7 @@ func NewConfig(vendor string) Config {
 			ShortName:     "oracle-11g",
 			LocalDBAddr:   "localhost:1521",
 			AgentAddr:     "http://localhost:7000",
-			AgentDBHost:   "localhost:1521",
+			RemoteDBAddr:  "localhost:1521",
 			User:          "system",
 			Password:      "password",
 			SID:           "orcl",
