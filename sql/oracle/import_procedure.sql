@@ -44,6 +44,8 @@ source_db_version VARCHAR2(2048);
 
 job_doesnt_exist EXCEPTION;
 PRAGMA EXCEPTION_INIT( job_doesnt_exist, -27475 );
+invalid_argument_value EXCEPTION;
+PRAGMA EXCEPTION_INIT( invalid_argument_value, -39001 );
 err_msg VARCHAR2(200);
 
 object_file_name VARCHAR2(2048);
@@ -62,6 +64,10 @@ dump_schema VARCHAR2(2048);
 datafile1 VARCHAR2(2000);
 datafile2 VARCHAR2(2000);
 file_clause VARCHAR2(4000) :='';
+
+sts ku$_Status;          -- The status object returned by get_status
+le ku$_LogEntry;         -- For WIP and error messages
+job_state VARCHAR2(30);  -- To keep track of job state
   
 BEGIN
 	IF (SUBSTR(dump_dir, -1, 1) = '/') OR (SUBSTR(dump_dir, -1, 1) = '\') THEN   --chr(92)
@@ -177,16 +183,39 @@ BEGIN
 		
 		dbms_output.put_line('Extracting schema/tablespace info...');
 	
-		-- load master table
-		jn := SUBSTR(REPLACE('READ_' || dump_files(dump_file_iterator), '.','_'),1,30);
-		handle1 := dbms_datapump.open (operation => 'IMPORT', job_mode => 'FULL', job_name => jn); 
-		dbms_datapump.add_file(handle => handle1, filename => dump_files(dump_file_iterator), directory => 'DATA_PUMP_DIR', filetype => DBMS_DATAPUMP.KU$_FILE_TYPE_DUMP_FILE);
-		dbms_datapump.set_parameter(handle => handle1, name => 'MASTER_ONLY', value => 1);
-		dbms_datapump.set_parameter(handle => handle1, name => 'KEEP_MASTER', value => 1);
-		dbms_datapump.start_job(handle => handle1); 
-		dbms_datapump.wait_for_job(handle => handle1, job_state => js); 
-		dbms_output.put_line('Loading of the master table has been ' || js);
-		dbms_output.put_line(chr(10));
+		BEGIN
+			-- load master table
+			jn := SUBSTR(REPLACE('READ_' || dump_files(dump_file_iterator), '.','_'),1,30);
+			handle1 := dbms_datapump.open (operation => 'IMPORT', job_mode => 'FULL', job_name => jn); 
+			dbms_datapump.add_file(handle => handle1, filename => dump_files(dump_file_iterator), directory => 'DATA_PUMP_DIR', filetype => DBMS_DATAPUMP.KU$_FILE_TYPE_DUMP_FILE);
+			dbms_datapump.set_parameter(handle => handle1, name => 'MASTER_ONLY', value => 1);
+			dbms_datapump.set_parameter(handle => handle1, name => 'KEEP_MASTER', value => 1);
+			dbms_datapump.start_job(handle => handle1); 
+			dbms_datapump.wait_for_job(handle => handle1, job_state => js); 
+			dbms_output.put_line('Loading of the master table has been ' || js);
+			dbms_output.put_line(chr(10));
+		EXCEPTION
+			WHEN invalid_argument_value THEN
+				dbms_datapump.get_status(handle1,
+											dbms_datapump.ku$_status_job_error,0,
+											job_state,sts);
+				if (bitand(sts.mask,dbms_datapump.ku$_status_job_error) != 0)
+				then
+					le := sts.error;
+					if le is not null then
+						i := le.FIRST;
+						while i is not null loop
+							dbms_output.put_line(le(i).LogText);
+							i := le.NEXT(i);
+						end loop;
+					end if;
+					if le(le.LAST).errorNumber = -39142 -- ORA-39142: incompatible version number in dump file
+					then
+						err_msg := 'Possibly incompatible dump version (made from Oracle ' || source_db_version || '). Try importing it in a newer Oracle version.';
+						raise_application_error(-20000, err_msg);
+					end if;
+				end if;
+		END;
 	
 		-- read the loaded master table (has the same name as the job name) and then drop it
 		
