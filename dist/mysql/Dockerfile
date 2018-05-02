@@ -1,15 +1,11 @@
 FROM debian:stretch-slim
 
-WORKDIR /ddn
-
-RUN mkdir -p exports dumps data
+RUN mkdir -p exports dumps
 RUN apt-get update && apt-get install mysql-client -y
 
-COPY agent ./
-COPY sql ./sql
+ENV DDN_VENDOR=mysql DDN_EXEC=/usr/bin/mysql
 
-VOLUME ["/ddn/data"]
+COPY sql /sql
+COPY ddn-agent /
 
-EXPOSE 7000
-
-ENTRYPOINT ["/ddn/agent", "-p", "/ddn/data/agent.conf", "-l", "/ddn/data/agent.log"]
+ENTRYPOINT ["/ddn-agent"]

@@ -1,15 +1,11 @@
 FROM debian:stretch
 
-WORKDIR /ddn
-
-RUN mkdir -p exports dumps data /usr/share/man/man1
+RUN mkdir -p exports dumps
 RUN apt-get update && apt-get install postgresql-client -y
 
-COPY agent ./
-COPY sql ./sql
+ENV DDN_VENDOR=postgres DDN_EXEC=/usr/bin/psql
 
-VOLUME ["/ddn/data"]
+COPY sql /sql
+COPY ddn-agent /
 
-EXPOSE 7000
-
-ENTRYPOINT ["/ddn/agent", "-p", "/ddn/data/agent.conf", "-l", "/ddn/data/agent.log"]
+ENTRYPOINT ["/ddn-agent"]
