@@ -202,9 +202,10 @@ func (db *postgres) DropDatabase(dbRequest model.DBRequest) error {
 // ImportDatabase imports the dumpfile to the database or returns an error
 // if it failed for some reason.
 func (db *postgres) ImportDatabase(dbreq model.DBRequest) error {
-	userArg := fmt.Sprintf("-U%s", dbreq.Username)
+	addr := strings.Split(conf.LocalDBAddr, ":")
+	host, port := addr[0], addr[1]
 
-	cmd := exec.Command(conf.Exec, userArg, dbreq.DatabaseName)
+	cmd := exec.Command(conf.Exec, "-h", host, "-p", port, "-U", dbreq.Username, "-d", dbreq.DatabaseName)
 
 	file, err := os.Open(dbreq.DumpLocation)
 	if err != nil {
@@ -218,6 +219,8 @@ func (db *postgres) ImportDatabase(dbreq model.DBRequest) error {
 	var errBuf bytes.Buffer
 	cmd.Stderr = &errBuf
 
+	os.Setenv("PGPASSWORD", dbreq.Password)
+	defer os.Setenv("PGPASSWORD", "")
 	err = cmd.Run()
 	if err != nil {
 		db.DropDatabase(dbreq)
