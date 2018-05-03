@@ -255,11 +255,14 @@ func (db *mysql) ImportDatabase(dbreq model.DBRequest) error {
 	}
 	defer file.Close()
 
-	port := strings.Split(conf.LocalDBAddr, ":")[1]
+	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
+
+	host := hostAndPort[0]
+	port := hostAndPort[1]
 
 	// Start the import
 	args := []string{
-		fmt.Sprintf("--host=%s", conf.LocalDBAddr),
+		fmt.Sprintf("--host=%s", host),
 		fmt.Sprintf("--port=%s", port),
 		fmt.Sprintf("-u%s", dbreq.Username),
 		fmt.Sprintf("-p%s", dbreq.Password),
