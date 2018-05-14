@@ -296,10 +296,13 @@ func (db *mysql) ExportDatabase(dbreq model.DBRequest) (string, error) {
 	}
 	defer outputfile.Close()
 
-	port := strings.Split(conf.LocalDBAddr, ":")[1]
+	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
+
+	host := hostAndPort[0]
+	port := hostAndPort[1]
 
 	args := []string{
-		fmt.Sprintf("--host=%s", conf.LocalDBAddr),
+		fmt.Sprintf("--host=%s", host),
 		fmt.Sprintf("--port=%s", port),
 		fmt.Sprintf("-u%s", dbreq.Username),
 		fmt.Sprintf("-p%s", dbreq.Password),
