@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $1 == "--push" ]]; then
+    push="true"
+    shift 1
+fi
+
 if [[ $# -ne 1 ]]; then
     echo 'Please specify the version. Should be major.minor.patch (e.g. 3.1.10).'
 else
@@ -16,19 +21,21 @@ else
     for d in */; do
         dir=${d%/}
 
-        echo "Creating $dir"
+        echo "Building $dir"
 
         cp -r $rootloc/ddn-agent $rootloc/sql $dir
 
         docker build -t agent-$dir:$version -t agent-$dir:latest $dir
 
-        docker tag agent-$dir:$version djavorszky/ddn-agent-$dir:$version
-        docker push djavorszky/ddn-agent-$dir:$version
-        docker tag agent-$dir:latest djavorszky/ddn-agent-$dir:latest
-        docker push djavorszky/ddn-agent-$dir:latest
+        if [[ $push == "true" ]]; then
+            docker tag agent-$dir:$version djavorszky/ddn-agent-$dir:$version
+            docker tag agent-$dir:latest djavorszky/ddn-agent-$dir:latest
+            docker push djavorszky/ddn-agent-$dir:$version
+            docker push djavorszky/ddn-agent-$dir:latest
+        fi
 
         rm -rf $dir/ddn-agent $dir/sql
 
-        echo "Created $dir"
+        echo "Built $dir"
     done
 fi
