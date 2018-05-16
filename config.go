@@ -9,19 +9,20 @@ import (
 
 // Config to hold the database server and agent information
 type Config struct {
-	Vendor        string `toml:"db-vendor" required:"true"`
-	Version       string `toml:"db-version"`
-	Exec          string `toml:"db-executable" required:"true"`
-	User          string `toml:"db-username" required:"true"`
-	Password      string `toml:"db-userpass"`
-	SID           string `toml:"oracle-sid"`
-	DatafileDir   string `toml:"oracle-datafiles-path"`
-	LocalDBAddr   string `toml:"db-local-addr" required:"true"`
-	RemoteDBAddr  string `toml:"db-remote-addr" required:"true"`
-	AgentAddr     string `toml:"agent-addr" required:"true"`
-	ShortName     string `toml:"agent-shortname" required:"true"`
-	AgentName     string `toml:"agent-longname"`
-	MasterAddress string `toml:"server-address" required:"true"`
+	Vendor         string `toml:"db-vendor" required:"true"`
+	Version        string `toml:"db-version"`
+	Exec           string `toml:"db-executable" required:"true"`
+	User           string `toml:"db-username" required:"true"`
+	Password       string `toml:"db-userpass"`
+	SID            string `toml:"oracle-sid"`
+	DatafileDir    string `toml:"oracle-datafiles-path"`
+	RemoteDumpsDir string `toml:"remote-dumps-dir"`
+	LocalDBAddr    string `toml:"db-local-addr" required:"true"`
+	RemoteDBAddr   string `toml:"db-remote-addr" required:"true"`
+	AgentAddr      string `toml:"agent-addr" required:"true"`
+	ShortName      string `toml:"agent-shortname" required:"true"`
+	AgentName      string `toml:"agent-longname"`
+	MasterAddress  string `toml:"server-address" required:"true"`
 }
 
 // Print prints the Config object to the log.
@@ -35,14 +36,14 @@ func (c Config) Print() {
 
 	if conf.Vendor == "oracle" {
 		logger.Info("SID:\t\t%s", conf.SID)
-		logger.Info("DatafileDir:\t\t%s", conf.DatafileDir)
+		logger.Info("DatafileDir:\t%s", conf.DatafileDir)
 	}
 
 	logger.Info("Local DB addr:\t%s", conf.LocalDBAddr)
 
 	logger.Info("Remote DB addr:\t%s", conf.RemoteDBAddr)
 
-	logger.Info("Agent addr:\t%s", conf.AgentAddr)
+	logger.Info("Agent addr:\t\t%s", conf.AgentAddr)
 
 	logger.Info("Short name:\t\t%s", conf.ShortName)
 	logger.Info("Agent name:\t%s", conf.AgentName)

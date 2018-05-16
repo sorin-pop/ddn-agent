@@ -38,7 +38,7 @@ func (db *oracle) CreateDatabase(dbRequest model.DBRequest) error {
 	args := []string{
 		"-L",
 		"-S",
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		"@./sql/oracle/create_schema.sql",
 		dbRequest.Username,
 		dbRequest.Password,
@@ -62,7 +62,7 @@ func (db *oracle) DropDatabase(dbRequest model.DBRequest) error {
 	args := []string{
 		"-L",
 		"-S",
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		"@./sql/oracle/drop_schema.sql",
 		dbRequest.Username,
 	}
@@ -83,10 +83,14 @@ func (db *oracle) DropDatabase(dbRequest model.DBRequest) error {
 func (db *oracle) ImportDatabase(dbRequest model.DBRequest) error {
 	dumpDir, fileName := filepath.Split(dbRequest.DumpLocation)
 
+	if conf.RemoteDumpsDir != "" {
+		dumpDir = conf.RemoteDumpsDir
+	}
+
 	args := []string{
 		"-L",
 		"-S",
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		"@./sql/oracle/import_dump.sql",
 		dumpDir,
 		fileName,
@@ -108,7 +112,7 @@ func (db *oracle) ExportDatabase(dbRequest model.DBRequest) (string, error) {
 	fullDumpFilename := fmt.Sprintf("%s_%s.dmp", dbRequest.DatabaseName, time.Now().Format("20060102150405"))
 	// Start the export
 	args := []string{
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		fmt.Sprintf("schemas=%s", dbRequest.DatabaseName),
 		"directory=EXP_DIR",
 		fmt.Sprintf("dumpfile=%s", fullDumpFilename),
@@ -132,7 +136,7 @@ func (db *oracle) Version() (string, error) {
 	args := []string{
 		"-L",
 		"-S",
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		"@./sql/oracle/get_db_version.sql",
 	}
 
@@ -166,7 +170,7 @@ func (db *oracle) RefreshImportStoredProcedure() error {
 	args := []string{
 		"-L",
 		"-S",
-		fmt.Sprintf("%s/%s", conf.User, conf.Password),
+		getConnectArg(),
 		"@./sql/oracle/import_procedure.sql",
 	}
 
@@ -174,9 +178,9 @@ func (db *oracle) RefreshImportStoredProcedure() error {
 
 	if res.exitCode != 0 {
 		logger.Error("Missing grants from SYS perhaps?")
-		logger.Error("sgrant select on dba_datapump_jobs to %s;", conf.User)
-		logger.Error("%sgrant create any directory to %s;\n", conf.User)
-		logger.Error("%sgrant create external job to %s;\n", conf.User)
+		logger.Error("grant select on dba_datapump_jobs to %s;", conf.User)
+		logger.Error("grant create any directory to %s;", conf.User)
+		logger.Error("grant create external job to %s;", conf.User)
 
 		return fmt.Errorf("creating import procedure failed: %v", res)
 	}
@@ -185,7 +189,12 @@ func (db *oracle) RefreshImportStoredProcedure() error {
 }
 
 func (db *oracle) CreateExpDir(expDirPath string) error {
-	args := []string{"-L", "-S", fmt.Sprintf("%s/%s", conf.User, conf.Password), "@./sql/oracle/create_exp_dir.sql", expDirPath}
+	args := []string{
+		"-L",
+		"-S",
+		getConnectArg(),
+		"@./sql/oracle/create_exp_dir.sql",
+		expDirPath}
 
 	res := RunCommand(conf.Exec, args...)
 
@@ -194,4 +203,19 @@ func (db *oracle) CreateExpDir(expDirPath string) error {
 	}
 
 	return nil
+}
+
+func getConnectArg() string {
+	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
+
+	host := hostAndPort[0]
+	port := hostAndPort[1]
+
+	return fmt.Sprintf("%s/%s@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVICE_NAME=%s)))'",
+		conf.User,
+		conf.Password,
+		host,
+		port,
+		conf.SID,
+	)
 }

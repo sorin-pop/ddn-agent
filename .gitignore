@@ -31,3 +31,5 @@ _testmain.go
 .vscode
 
 ddn-agent
+
+*.zip
