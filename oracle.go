@@ -211,11 +211,15 @@ func getConnectArg() string {
 	host := hostAndPort[0]
 	port := hostAndPort[1]
 
-	return fmt.Sprintf("%s/%s@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVICE_NAME=%s)))'",
+	res := fmt.Sprintf("%s/%s@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVICE_NAME=%s)))'",
 		conf.User,
 		conf.Password,
 		host,
 		port,
 		conf.SID,
 	)
+
+	logger.Debug("Oracle connection argument: %s", res)
+
+	return res
 }
