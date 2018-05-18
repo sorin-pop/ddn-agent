@@ -23,6 +23,7 @@ type Config struct {
 	ShortName      string `toml:"agent-shortname" required:"true"`
 	AgentName      string `toml:"agent-longname"`
 	MasterAddress  string `toml:"server-address" required:"true"`
+	StartupDelay   string `toml:"startup-delay"`
 }
 
 // Print prints the Config object to the log.

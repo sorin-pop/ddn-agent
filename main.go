@@ -97,6 +97,17 @@ func main() {
 	logger.Info("Starting with properties:")
 	conf.Print()
 
+	if conf.StartupDelay != "" {
+		d, err := time.ParseDuration(conf.StartupDelay)
+		if err != nil {
+			logger.Fatal("Invalid startup delay: %v", conf.StartupDelay)
+		}
+
+		logger.Info("Delaying startup for %s", d)
+
+		time.Sleep(d)
+	}
+
 	err = db.Connect(conf)
 	if err != nil {
 		logger.Fatal("couldn't establish database connection: %v", err)
