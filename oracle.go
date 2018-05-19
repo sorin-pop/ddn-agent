@@ -219,6 +219,10 @@ func getConnectArg() string {
 		conf.SID,
 	)
 
+	if conf.User == "sys" {
+		res += " as sysdba"
+	}
+
 	logger.Debug("Oracle connection argument: %s", res)
 
 	return res
