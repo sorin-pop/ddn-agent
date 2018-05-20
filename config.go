@@ -16,6 +16,7 @@ type Config struct {
 	Password       string `toml:"db-userpass"`
 	SID            string `toml:"oracle-sid"`
 	DatafileDir    string `toml:"oracle-datafiles-path"`
+	SysPassword    string `toml:"oracle-sys-password"`
 	RemoteDumpsDir string `toml:"remote-dumps-dir"`
 	LocalDBAddr    string `toml:"db-local-addr" required:"true"`
 	RemoteDBAddr   string `toml:"db-remote-addr" required:"true"`

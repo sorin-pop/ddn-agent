@@ -28,8 +28,8 @@ else
         docker build -t djavorszky/ddn-agent-$dir:latest -t djavorszky/ddn-agent-$dir:$version $dir
 
         if [[ $push == "true" ]]; then
-            docker push djavorszky/ddn-agent-$dir:latest
             docker push djavorszky/ddn-agent-$dir:$version
+            docker push djavorszky/ddn-agent-$dir:latest
         fi
 
         rm -rf $dir/ddn-agent $dir/sql

@@ -18,6 +18,43 @@ type oracle struct {
 }
 
 func (db *oracle) Connect(c Config) error {
+	if c.SysPassword != "" {
+		logger.Info("Granting roles to %s", conf.User)
+		err := db.doGrants()
+		if err != nil {
+			return fmt.Errorf("failed to connect to database: %v", err)
+		}
+	}
+
+	args := []string{
+		"-L",
+		"-S",
+		getConnectArg(),
+		"SELECT 1;",
+	}
+
+	res := RunCommand(c.Exec, args...)
+
+	if res.exitCode != 0 {
+		return fmt.Errorf("failed to connect to database: %v", res)
+	}
+
+	return nil
+}
+
+func (db *oracle) doGrants() error {
+	args := []string{
+		getConnectString("sys", conf.SysPassword),
+		"@./sql/oracle/grant_user.sql",
+		conf.User,
+	}
+
+	res := RunCommand(conf.Exec, args...)
+
+	if res.exitCode != 0 {
+		return fmt.Errorf("failed granting roles to %s: %v", conf.User, res)
+	}
+
 	return nil
 }
 
@@ -206,24 +243,30 @@ func (db *oracle) CreateExpDir(expDirPath string) error {
 }
 
 func getConnectArg() string {
+	connect := getConnectString(conf.User, conf.Password)
+
+	logger.Debug("Oracle connection argument: %s", connect)
+
+	return connect
+}
+
+func getConnectString(user, password string) string {
 	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
 
 	host := hostAndPort[0]
 	port := hostAndPort[1]
 
 	res := fmt.Sprintf("%s/%s@'(DESCRIPTION=(ADDRESS=(PROTOCOL=tcp)(HOST=%s)(PORT=%s))(CONNECT_DATA=(SERVICE_NAME=%s)))'",
-		conf.User,
-		conf.Password,
+		user,
+		password,
 		host,
 		port,
 		conf.SID,
 	)
 
-	if conf.User == "sys" {
+	if user == "sys" {
 		res += " as sysdba"
 	}
-
-	logger.Debug("Oracle connection argument: %s", res)
 
 	return res
 }
