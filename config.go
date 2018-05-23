@@ -24,6 +24,7 @@ type Config struct {
 	ShortName      string `toml:"agent-shortname" required:"true"`
 	AgentName      string `toml:"agent-longname"`
 	MasterAddress  string `toml:"server-address" required:"true"`
+	LogLevel       string `toml:"log-level" `
 	StartupDelay   string `toml:"startup-delay"`
 }
 

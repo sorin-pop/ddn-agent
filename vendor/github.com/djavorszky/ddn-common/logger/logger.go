@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 // LogLevel is used to determine what to log.
@@ -37,6 +38,30 @@ const (
 
 // Level is to be used to control the log level of the application.
 var Level = INFO
+
+// Parse parses the level string and returns the loglevel if it
+// corresponds to a valid level (fatal, error, warn, info or debug),
+// or an error if it could not parse it.
+func Parse(level string) (LogLevel, error) {
+	var parsedLevel LogLevel
+
+	switch strings.ToLower(level) {
+	case "fatal":
+		parsedLevel = FATAL
+	case "error":
+		parsedLevel = ERROR
+	case "warn":
+		parsedLevel = WARN
+	case "info":
+		parsedLevel = INFO
+	case "debug":
+		parsedLevel = DEBUG
+	default:
+		return parsedLevel, fmt.Errorf("unknown level: %v", level)
+	}
+
+	return parsedLevel, nil
+}
 
 // Fatal should be used to log a critical incident and exit the application
 func Fatal(msg string, args ...interface{}) {

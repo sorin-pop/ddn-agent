@@ -207,10 +207,12 @@ func (db *postgres) ImportDatabase(dbreq model.DBRequest) error {
 
 	cmd := exec.Command(conf.Exec, "-h", host, "-p", port, "-U", dbreq.Username, "-d", dbreq.DatabaseName)
 
+	logger.Debug("Executing command: %v", cmd)
+
 	file, err := os.Open(dbreq.DumpLocation)
 	if err != nil {
 		db.DropDatabase(dbreq)
-		return fmt.Errorf("could not open dumpfile '%s': %s", dbreq.DumpLocation, err.Error())
+		return fmt.Errorf("could not open dumpfile '%s': %v", dbreq.DumpLocation, err)
 	}
 	defer file.Close()
 

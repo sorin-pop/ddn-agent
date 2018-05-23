@@ -47,8 +47,6 @@ func main() {
 		os.Exit(1)
 	}()
 
-	logger.Level = logger.INFO
-
 	var err error
 	confLocation := flag.String("p", "env", "Specify whether to read a configuration from a file (e.g. server.conf) or from environment variables.")
 	logname := flag.String("l", "std", "Specify the log's filename. If set to std, logs to the terminal.")
@@ -59,6 +57,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed loading configuration: %v", err)
 	}
+
+	logLevel, err := logger.Parse(conf.LogLevel)
+	if err != nil {
+		logLevel = logger.INFO
+	}
+
+	logger.Level = logLevel
 
 	if _, err := os.Stat(conf.Exec); os.IsNotExist(err) {
 		logger.Fatal("database executable doesn't exist: %v", conf.Exec)
