@@ -29,7 +29,7 @@ func (db *oracle) Connect(c Config) error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"SELECT 1;",
 	}
 
@@ -44,7 +44,7 @@ func (db *oracle) Connect(c Config) error {
 
 func (db *oracle) doGrants() error {
 	args := []string{
-		getConnectString("sys", conf.SysPassword),
+		db.getConnectString("sys", conf.SysPassword),
 		"@./sql/oracle/grant_user.sql",
 		conf.User,
 	}
@@ -75,7 +75,7 @@ func (db *oracle) CreateDatabase(dbRequest model.DBRequest) error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/create_schema.sql",
 		dbRequest.Username,
 		dbRequest.Password,
@@ -99,7 +99,7 @@ func (db *oracle) DropDatabase(dbRequest model.DBRequest) error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/drop_schema.sql",
 		dbRequest.Username,
 	}
@@ -127,7 +127,7 @@ func (db *oracle) ImportDatabase(dbRequest model.DBRequest) error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/import_dump.sql",
 		dumpDir,
 		fileName,
@@ -149,7 +149,7 @@ func (db *oracle) ExportDatabase(dbRequest model.DBRequest) (string, error) {
 	fullDumpFilename := fmt.Sprintf("%s_%s.dmp", dbRequest.DatabaseName, time.Now().Format("20060102150405"))
 	// Start the export
 	args := []string{
-		getConnectArg(),
+		db.getConnectArg(),
 		fmt.Sprintf("schemas=%s", dbRequest.DatabaseName),
 		"directory=EXP_DIR",
 		fmt.Sprintf("dumpfile=%s", fullDumpFilename),
@@ -173,7 +173,7 @@ func (db *oracle) Version() (string, error) {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/get_db_version.sql",
 	}
 
@@ -207,7 +207,7 @@ func (db *oracle) RefreshImportStoredProcedure() error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/import_procedure.sql",
 	}
 
@@ -229,7 +229,7 @@ func (db *oracle) CreateExpDir(expDirPath string) error {
 	args := []string{
 		"-L",
 		"-S",
-		getConnectArg(),
+		db.getConnectArg(),
 		"@./sql/oracle/create_exp_dir.sql",
 		expDirPath}
 
@@ -242,15 +242,15 @@ func (db *oracle) CreateExpDir(expDirPath string) error {
 	return nil
 }
 
-func getConnectArg() string {
-	connect := getConnectString(conf.User, conf.Password)
+func (db *oracle) getConnectArg() string {
+	connect := db.getConnectString(conf.User, conf.Password)
 
 	logger.Debug("Oracle connection argument: %s", connect)
 
 	return connect
 }
 
-func getConnectString(user, password string) string {
+func (db *oracle) getConnectString(user, password string) string {
 	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
 
 	host := hostAndPort[0]
