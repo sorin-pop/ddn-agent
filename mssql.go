@@ -16,20 +16,48 @@ type mssql struct {
 }
 
 func (db *mssql) Connect(c Config) error {
-	return fmt.Errorf("operation not supported: Connect")
+	_, err := db.Version()
+	if err != nil {
+		return fmt.Errorf("connect: %v", err)
+	}
+
+	err = db.createUser()
+	if err != nil {
+		return fmt.Errorf("connect: %v", err)
+	}
+
+	return nil
+}
+
+func (db *mssql) createUser() error {
+	connectArgs := db.getConnectArg()
+
+	args := append(connectArgs, "-i", "/sql/mssql/create_user.sql")
+
+	res := RunCommand(conf.Exec, args...)
+
+	if res.exitCode != 0 {
+		logger.Error("unable to create user:\n> stdout:\n%q\n> stderr:\n%q\n> exitCode: %d", res.stdout, res.stderr, res.exitCode)
+
+		return fmt.Errorf("create user failed with exitcode '%d'", res.exitCode)
+	}
+
+	return nil
 }
 
 func (db *mssql) Close() {
 	// Not needed
 }
 
+// dummy return...
 func (db *mssql) Alive() error {
-	return fmt.Errorf("operation not supported: Alive")
+	return nil
 }
 
 func (db *mssql) CreateDatabase(dbRequest model.DBRequest) error {
+	connectArgs := db.getConnectArg()
 
-	args := []string{"-b", "-U", conf.User, "-P", conf.Password, "-Q", fmt.Sprintf("CREATE DATABASE %s", dbRequest.DatabaseName)}
+	args := append(connectArgs, "-Q", fmt.Sprintf("CREATE DATABASE %s", dbRequest.DatabaseName))
 
 	res := RunCommand(conf.Exec, args...)
 
@@ -46,8 +74,9 @@ func (db *mssql) CreateDatabase(dbRequest model.DBRequest) error {
 }
 
 func (db *mssql) DropDatabase(dbRequest model.DBRequest) error {
+	connectArgs := db.getConnectArg()
 
-	args := []string{"-b", "-U", conf.User, "-P", conf.Password, "-Q", fmt.Sprintf("DROP DATABASE %s", dbRequest.DatabaseName)}
+	args := append(connectArgs, "-Q", fmt.Sprintf("DROP DATABASE %s", dbRequest.DatabaseName))
 
 	res := RunCommand(conf.Exec, args...)
 
@@ -72,14 +101,13 @@ func (db *mssql) ImportDatabase(dbRequest model.DBRequest) error {
 
 	driveLetter, dumpPath := s[0], s[1]
 
-	args := []string{
-		"-b",
-		"-U", conf.User,
-		"-P", conf.Password,
-		"-v", "driveLetter=" + driveLetter,
-		"-v", "dumpPath=" + dumpPath,
-		"-v", "targetDatabaseName=" + dbRequest.DatabaseName,
-		"-i", curDir + "\\sql\\mssql\\import_dump.sql"}
+	connectArgs := db.getConnectArg()
+
+	args := append(connectArgs,
+		"-v", "driveLetter="+driveLetter,
+		"-v", "dumpPath="+dumpPath,
+		"-v", "targetDatabaseName="+dbRequest.DatabaseName,
+		"-i", curDir+"/sql/mssql/import_dump.sql")
 
 	res := RunCommand(conf.Exec, args...)
 
@@ -103,14 +131,15 @@ func (db *mssql) ListDatabase() ([]string, error) {
 }
 
 func (db *mssql) Version() (string, error) {
+	connectArgs := db.getConnectArg()
 
-	args := []string{"-b", "-h", "-1", "-W", "-U", conf.User, "-P", conf.Password, "-Q",
-		"SET NOCOUNT ON; SELECT (CAST(SERVERPROPERTY('productversion') AS nvarchar(128)) + SPACE(1) + CAST(SERVERPROPERTY('productlevel') AS nvarchar(128)) + SPACE(1) + CAST(SERVERPROPERTY('edition') AS nvarchar(128)))"}
+	args := append(connectArgs, "-h", "-1", "-W", "-Q",
+		"SET NOCOUNT ON; SELECT (CAST(SERVERPROPERTY('productversion') AS nvarchar(128)) + SPACE(1) + CAST(SERVERPROPERTY('productlevel') AS nvarchar(128)) + SPACE(1) + CAST(SERVERPROPERTY('edition') AS nvarchar(128)))")
 
 	res := RunCommand(conf.Exec, args...)
 
 	if res.exitCode != 0 {
-		logger.Error("Unable to get SQL Server version:\n> stdout:\n'%s'\n> stderr:\n'%s'\n> exitCode: %d", res.stdout, res.stderr, res.exitCode)
+		logger.Error("Unable to get SQL Server version:\n> stdout:\n%q\n> stderr:\n%q\n> exitCode: %d", res.stdout, res.stderr, res.exitCode)
 
 		return "", fmt.Errorf("getting version failed with exitcode '%d'", res.exitCode)
 	}
@@ -133,4 +162,47 @@ func (db *mssql) RequiredFields(dbreq model.DBRequest, reqType int) []string {
 
 func (db *mssql) ValidateDump(path string) (string, error) {
 	return path, nil
+}
+
+func (db *mssql) getConnectArg() []string {
+	connect := db.getConnectSlice(conf.User, conf.Password)
+
+	logger.Debug("MSSQL connection argument: %s", connect)
+
+	return connect
+}
+
+func (db *mssql) getConnectString(user, password string) string {
+	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
+
+	host := hostAndPort[0]
+	port := hostAndPort[1]
+
+	res := fmt.Sprintf("-b -S tcp:%s,%s -U %s -P %s",
+		host,
+		port,
+		user,
+		password,
+	)
+
+	return res
+}
+
+func (db *mssql) getConnectSlice(user, password string) []string {
+	hostAndPort := strings.Split(conf.LocalDBAddr, ":")
+
+	host := hostAndPort[0]
+	port := hostAndPort[1]
+
+	res := []string{
+		"-b",
+		"-S",
+		fmt.Sprintf("tcp:%s,%s", host, port),
+		"-U",
+		user,
+		"-P",
+		password,
+	}
+
+	return res
 }
