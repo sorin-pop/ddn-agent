@@ -21,21 +21,25 @@ func (db *mssql) Connect(c Config) error {
 		return fmt.Errorf("connect: %v", err)
 	}
 
-	err = db.createUser()
-	if err != nil {
-		return fmt.Errorf("connect: %v", err)
-	}
-
 	return nil
 }
 
-func (db *mssql) createUser() error {
+func (db *mssql) createUser(username, password string) error {
 	connectArgs := db.getConnectArg()
 
-	args := append(connectArgs, "-i", "/sql/mssql/create_user.sql")
+	// sqlcmd on Linux does not support passing variables on the commandline, so we need to work it around.
+	createQuery := fmt.Sprintf(`IF NOT EXISTS (SELECT name FROM [sys].[server_principals] WHERE name = '%[1]s')
+	Begin
+		CREATE LOGIN %[1]s WITH PASSWORD = '%[2]s';
+		CREATE USER %[1]s FOR LOGIN %[1]s;
+		GRANT ALL PRIVILEGES TO %[1]s;
+		ALTER SERVER ROLE [dbcreator] ADD MEMBER [%[1]s];
+	End
+	GO`, username, password)
+
+	args := append(connectArgs, "-Q", createQuery)
 
 	res := RunCommand(conf.Exec, args...)
-
 	if res.exitCode != 0 {
 		logger.Error("unable to create user:\n> stdout:\n%q\n> stderr:\n%q\n> exitCode: %d", res.stdout, res.stderr, res.exitCode)
 
@@ -55,7 +59,12 @@ func (db *mssql) Alive() error {
 }
 
 func (db *mssql) CreateDatabase(dbRequest model.DBRequest) error {
-	connectArgs := db.getConnectArg()
+	err := db.createUser(dbRequest.Username, dbRequest.Password)
+	if err != nil {
+		return fmt.Errorf("create database: %v", err)
+	}
+
+	connectArgs := db.getConnectSlice(dbRequest.Username, dbRequest.Password)
 
 	args := append(connectArgs, "-Q", fmt.Sprintf("CREATE DATABASE %s", dbRequest.DatabaseName))
 
