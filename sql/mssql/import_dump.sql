@@ -21,32 +21,29 @@ DECLARE @fileListTable TABLE (
     [DifferentialBaseGUID]  UNIQUEIDENTIFIER,
     [IsReadOnly]            BIT,
     [IsPresent]             BIT,
-    [TDEThumbprint]         VARBINARY(32) -- necessary, starting with SQL Server 2008
-	--[SnapshotURL]			NVARCHAR(360) -- necessary, starting with SQL Server ?
-)
-DECLARE @RestoreStatement NVARCHAR(MAX), 
-        @dumpFileEntryType CHAR(1), 
+    [TDEThumbprint]         VARBINARY(32)
+);
+
+DECLARE @RestoreStatement NVARCHAR(MAX),
+        @dumpFileEntryType CHAR(1),
         @dumFileEntryLogicalName NVARCHAR(128),
         @localDataFolder NVARCHAR(MAX),
-		@dumpFile NVARCHAR(MAX) = '$(driveLetter)' + ':' + '$(dumpPath)',
+		@dumpFile NVARCHAR(MAX) = $(dumpPath),
 		@newPhysicalName NVARCHAR(128),
 		@fileType CHAR(1)
 
-SELECT top(1) @localDataFolder =  physical_name FROM sys.master_files;  
-SET  @localDataFolder = REPLACE(@localDataFolder, RIGHT(@localDataFolder, CHARINDEX('\', REVERSE(@localDataFolder))-1),'');
---print @localDataFolder      
 
-INSERT INTO @fileListTable EXEC('RESTORE FILELISTONLY FROM DISK = N''' + @dumpFile + '''')
+SELECT top(1) @localDataFolder = physical_name FROM sys.master_files;  
+SET @localDataFolder = REPLACE(@localDataFolder, RIGHT(@localDataFolder, CHARINDEX('\', REVERSE(@localDataFolder))-1),'');
 
---SELECT * FROM @fileListTable
+INSERT INTO @fileListTable EXEC('RESTORE FILELISTONLY FROM DISK = ' + @dumpFile + ';');
 
-SET @RestoreStatement = N'RESTORE DATABASE [' + '$(targetDatabaseName)]' + N' FROM DISK=N''' + @dumpFile + '''' + N' WITH REPLACE, '
+SET @RestoreStatement = N'RESTORE DATABASE [$(targetDatabaseName)] FROM DISK='+ @dumpFile + ' WITH REPLACE, ';
 
 DECLARE dumpFileList CURSOR FOR
 	SELECT
 		Type,
 		LogicalName
-		--LTRIM(RTRIM(RIGHT(PhysicalName, CHARINDEX('\', REVERSE(PhysicalName)) - 1)))
 	FROM @fileListTable WHERE Type IN ('D','L');
 
 OPEN dumpFileList 
@@ -54,20 +51,17 @@ OPEN dumpFileList
     WHILE @@Fetch_Status = 0
     BEGIN
 		IF @fileType = 'D' 
-			SET @newPhysicalName = '$(targetDatabaseName)' + '.mdf';
+			SET @newPhysicalName = '$(targetDatabaseName).mdf';
 		IF @fileType = 'L' 
-			SET @newPhysicalName = '$(targetDatabaseName)' + '_log.ldf';
-		SET @RestoreStatement = @RestoreStatement + 'MOVE ' + '''' + @dumFileEntryLogicalName + '''' + 
-        ' TO ' + '''' + @localDataFolder +  @newPhysicalName  + '''' + ', ';
+			SET @newPhysicalName = '$(targetDatabaseName)_log.ldf';
+		SET @RestoreStatement = @RestoreStatement + 'MOVE ' + @dumFileEntryLogicalName + 
+        ' TO ' + @localDataFolder +  @newPhysicalName  + ', ';
 		FETCH NEXT FROM dumpFileList INTO @fileType, @dumFileEntryLogicalName;
     END
 
-CLOSE dumpFileList
-DEALLOCATE dumpFileList
+CLOSE dumpFileList;
+DEALLOCATE dumpFileList;
 
 set @RestoreStatement = substring(@RestoreStatement, 1, len(@RestoreStatement)-1);
 
---PRINT @RestoreStatement
-
-EXEC(@RestoreStatement)
-
+EXEC(@RestoreStatement);

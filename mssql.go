@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,32 @@ import (
 
 type mssql struct {
 	conn *sql.DB
+}
+
+var (
+	mssqlCreateUserQueryTmpl string
+	mssqlImportQueryTmpl     string
+)
+
+func init() {
+	curDir, err := os.Getwd()
+	if err != nil {
+		panic("could not determine current directory")
+	}
+
+	b, err := ioutil.ReadFile(curDir + "/sql/mssql/import_dump.sql")
+	if err != nil {
+		panic("failed reading import procedure for mssql")
+	}
+
+	mssqlImportQueryTmpl = string(b)
+
+	b, err = ioutil.ReadFile(curDir + "/sql/mssql/create_user.sql")
+	if err != nil {
+		panic("failed reading user create procedure for mssql")
+	}
+
+	mssqlCreateUserQueryTmpl = string(b)
 }
 
 func (db *mssql) Connect(c Config) error {
@@ -28,16 +55,12 @@ func (db *mssql) createUser(username, password string) error {
 	connectArgs := db.getConnectArg()
 
 	// sqlcmd on Linux does not support passing variables on the commandline, so we need to work it around.
-	createQuery := fmt.Sprintf(`IF NOT EXISTS (SELECT name FROM [sys].[server_principals] WHERE name = '%[1]s')
-	Begin
-		CREATE LOGIN %[1]s WITH PASSWORD = '%[2]s';
-		CREATE USER %[1]s FOR LOGIN %[1]s;
-		GRANT ALL PRIVILEGES TO %[1]s;
-		ALTER SERVER ROLE [dbcreator] ADD MEMBER [%[1]s];
-	End
-	GO`, username, password)
+	query := mssqlCreateUserQueryTmpl
 
-	args := append(connectArgs, "-Q", createQuery)
+	query = strings.Replace(query, "$(name)", username, -1)
+	query = strings.Replace(query, "$(password)", password, -1)
+
+	args := append(connectArgs, "-Q", query)
 
 	res := RunCommand(conf.Exec, args...)
 	if res.exitCode != 0 {
@@ -101,25 +124,21 @@ func (db *mssql) DropDatabase(dbRequest model.DBRequest) error {
 }
 
 func (db *mssql) ImportDatabase(dbRequest model.DBRequest) error {
-	curDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("could not determine current directory")
-	}
+	connectArgs := db.getConnectSlice(dbRequest.Username, dbRequest.Password)
 
-	s := strings.Split(dbRequest.DumpLocation, ":")
+	query := mssqlImportQueryTmpl
 
-	driveLetter, dumpPath := s[0], s[1]
+	query = strings.Replace(query, "$(dumpPath)", dbRequest.DumpLocation, -1)
+	query = strings.Replace(query, "$(targetDatabaseName)", dbRequest.DatabaseName, -1)
 
-	connectArgs := db.getConnectArg()
+	// query = strings.Replace(query, "\t", "", -1)
+	// query = strings.Replace(query, "\n", "", -1)
 
-	args := append(connectArgs,
-		"-v", "driveLetter="+driveLetter,
-		"-v", "dumpPath="+dumpPath,
-		"-v", "targetDatabaseName="+dbRequest.DatabaseName,
-		"-i", curDir+"/sql/mssql/import_dump.sql")
+	logger.Debug(query)
+
+	args := append(connectArgs, "-Q", query)
 
 	res := RunCommand(conf.Exec, args...)
-
 	if res.exitCode != 0 {
 		logger.Error("Dump import seems to have failed:\n> stdout:\n'%s'\n> stderr:\n'%s'\n> exitCode: %d", res.stdout, res.stderr, res.exitCode)
 
