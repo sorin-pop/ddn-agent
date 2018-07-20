@@ -79,7 +79,7 @@ func (db *oracle) CreateDatabase(dbRequest model.DBRequest) error {
 		"@./sql/oracle/create_schema.sql",
 		dbRequest.Username,
 		dbRequest.Password,
-		conf.DatafileDir,
+		appendFileSeparator(conf.DatafileDir),
 	}
 
 	res := RunCommand(conf.Exec, args...)
@@ -133,7 +133,7 @@ func (db *oracle) ImportDatabase(dbRequest model.DBRequest) error {
 		fileName,
 		dbRequest.Username,
 		dbRequest.Password,
-		conf.DatafileDir,
+		appendFileSeparator(conf.DatafileDir),
 	}
 
 	res := RunCommand(conf.Exec, args...)
@@ -269,4 +269,19 @@ func (db *oracle) getConnectString(user, password string) string {
 	}
 
 	return res
+}
+
+func appendFileSeparator(path string) string {
+	if strings.Contains(path, "\\") {
+		if !strings.HasSuffix(path, "\\") {
+			path += "\\"
+		}
+	}
+
+	if strings.Contains(path, "/") {
+		if !strings.HasSuffix(path, "/") {
+			path += "/"
+		}
+	}
+	return path
 }
